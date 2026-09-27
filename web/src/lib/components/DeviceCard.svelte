@@ -1,6 +1,12 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import { checkDeviceAvailability, getStatus, Role } from '$lib/recorder';
+	import {
+		checkDeviceAvailability,
+		getStatus,
+		getSystemInfo,
+		Role,
+		type SystemInfo
+	} from '$lib/recorder';
 	import type { User } from 'firebase/auth';
 
 	interface Props {
@@ -13,6 +19,43 @@
 	let { user, name, allowed_roles = $bindable(), active }: Props = $props();
 	const status_promise = getStatus(user, name);
 	const local_promise = checkDeviceAvailability(name);
+	const system_promise = active ? getSystemInfo(user, name) : null;
+
+	const formatBytes = (bytes: number): string => {
+		const gigabytes = bytes / 1024 ** 3;
+		return gigabytes >= 1 ? `${gigabytes.toFixed(1)} GB` : `${Math.round(bytes / 1024 ** 2)} MB`;
+	};
+
+	const formatUsage = (total: number | null, available: number | null): string | null =>
+		total && available !== null
+			? `${formatBytes(total - available)} / ${formatBytes(total)}`
+			: null;
+
+	const formatUptime = (boot_time: string | null): string | null => {
+		if (!boot_time) {
+			return null;
+		}
+		const minutes = Math.floor((Date.now() - new Date(boot_time).getTime()) / 60000);
+		const days = Math.floor(minutes / (60 * 24));
+		const hours = Math.floor((minutes % (60 * 24)) / 60);
+		if (days > 0) {
+			return `${days} d ${hours} h`;
+		}
+		return hours > 0 ? `${hours} h ${minutes % 60} min` : `${minutes} min`;
+	};
+
+	const systemRows = (info: SystemInfo): [string, string][] =>
+		(
+			[
+				['Modell', info.model],
+				['OS', info.os],
+				['Kärna', info.kernel && `${info.kernel} (${info.architecture ?? '?'})`],
+				['Uppe', formatUptime(info.boot_time)],
+				['Minne', formatUsage(info.memory_total, info.memory_available)],
+				['Disk', formatUsage(info.disk_total, info.disk_free)],
+				['Version', info.commit]
+			] as [string, string | null][]
+		).filter((row): row is [string, string] => !!row[1]);
 </script>
 
 <a
@@ -38,6 +81,18 @@
 			<div class="rounded-log mt-3 mb-3 h-4 w-24 animate-pulse rounded bg-gray-300"></div>
 		{:then status}
 			<div class="mt-2 text-gray-600">Status: {status.status ?? 'Okänd'}</div>
+		{/await}
+		{#await system_promise then info}
+			{#if info}
+				<dl class="mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+					{#each systemRows(info) as [label, value] (label)}
+						<dt class="text-gray-500">{label}</dt>
+						<dd class="break-words text-gray-800">{value}</dd>
+					{/each}
+				</dl>
+			{/if}
+		{:catch}
+			<!-- Devices running an older version don't have the endpoint yet -->
 		{/await}
 	{/if}
 </a>

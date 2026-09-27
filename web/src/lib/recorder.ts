@@ -213,6 +213,30 @@ export const getStatus = async (user: User, device_name: string): Promise<{ stat
 	return response.json();
 };
 
+export type SystemInfo = {
+	hostname: string | null;
+	model: string | null;
+	os: string | null;
+	kernel: string | null;
+	architecture: string | null;
+	python: string | null;
+	commit: string | null;
+	boot_time: string | null;
+	load_average: [number, number, number] | null;
+	memory_total: number | null;
+	memory_available: number | null;
+	disk_total: number | null;
+	disk_free: number | null;
+};
+
+export const getSystemInfo = async (user: User, device_name: string): Promise<SystemInfo> => {
+	const { response } = await localRequestWithRelayFallback(user, device_name, `/system`);
+	if (!response.ok) {
+		throw new Error(`Failed to get system info: ${response.status}`);
+	}
+	return response.json();
+};
+
 export const getCurrentSensorData = async (
 	user: User,
 	device_name: string
