@@ -1,5 +1,5 @@
 FROM ghcr.io/astral-sh/uv:debian-slim
-RUN apt-get update && apt-get install -y ffmpeg curl
+RUN apt-get update && apt-get install -y curl ffmpeg
 WORKDIR /app
 COPY common/pyproject.toml common/pyproject.toml
 COPY common/uv.lock common/uv.lock
