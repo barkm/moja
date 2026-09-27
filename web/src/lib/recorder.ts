@@ -101,12 +101,19 @@ export const getSensorData = async (
 	const url = `sensors/${device_name}?${url_params.toString()}`;
 	const response = await authorizedRequest(user, PUBLIC_RECORDER_URL, url);
 	const data = await response.json();
-	return data.map((entry: { created_at: string; temperature: number | null; humidity: number | null; cpu_temperature: number | null }) => ({
-		created_at: new Date(entry.created_at),
-		...(entry.temperature != null && { temperature: entry.temperature }),
-		...(entry.humidity != null && { humidity: entry.humidity }),
-		...(entry.cpu_temperature != null && { cpu_temperature: entry.cpu_temperature })
-	}));
+	return data.map(
+		(entry: {
+			created_at: string;
+			temperature: number | null;
+			humidity: number | null;
+			cpu_temperature: number | null;
+		}) => ({
+			created_at: new Date(entry.created_at),
+			...(entry.temperature != null && { temperature: entry.temperature }),
+			...(entry.humidity != null && { humidity: entry.humidity }),
+			...(entry.cpu_temperature != null && { cpu_temperature: entry.cpu_temperature })
+		})
+	);
 };
 
 export interface Location {
