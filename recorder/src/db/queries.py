@@ -158,6 +158,19 @@ def get_locations(session: Session) -> list[models.Location]:
     return list(session.exec(select(models.Location)).all())
 
 
+def get_current_location(
+    session: Session, device: models.Device
+) -> models.Location | None:
+    statement = (
+        select(models.Location)
+        .join(models.DeviceLocation)
+        .where(models.DeviceLocation.device_id == device.id)
+        .order_by(models.DeviceLocation.assigned_at.desc())  # type: ignore
+        .limit(1)
+    )
+    return session.exec(statement).first()
+
+
 def get_current_device_for_location(
     session: Session, role: models.Role, location_name: str
 ) -> models.Device | None:

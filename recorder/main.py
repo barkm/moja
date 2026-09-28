@@ -176,16 +176,9 @@ def forward(
 def list_devices(
     session: Session = Depends(get_session),
     role: models.Role = Depends(get_role),
-) -> list[dict[str, str | bool | list[str]]]:
+) -> list[dict[str, str | bool | list[str] | None]]:
     return [
-        {
-            "name": device.name,
-            "allowed_roles": [role.value for role in device.allowed_roles],
-            "active": _is_active(url)
-            if (url := queries.get_url(session, device.name))
-            else False,
-        }
-        for device in queries.get_devices(session, role)
+        _device_info(session, device) for device in queries.get_devices(session, role)
     ]
 
 
@@ -194,15 +187,23 @@ def get_device(
     device_name: str,
     session: Session = Depends(get_session),
     role: models.Role = Depends(get_role),
-) -> dict[str, str | bool | list[str]]:
+) -> dict[str, str | bool | list[str] | None]:
     device = queries.get_device(session, device_name, role)
     if not device:
         raise HTTPException(status_code=404, detail="Device not found")
+    return _device_info(session, device)
+
+
+def _device_info(
+    session: Session, device: models.Device
+) -> dict[str, str | bool | list[str] | None]:
     url = queries.get_url(session, device.name)
+    location = queries.get_current_location(session, device)
     return {
         "name": device.name,
         "allowed_roles": [role.value for role in device.allowed_roles],
         "active": _is_active(url) if url else False,
+        "location": location.name if location else None,
     }
 
 
