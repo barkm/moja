@@ -11,6 +11,7 @@ COPY pi/main.py pi/main.py
 COPY pi/stream.py pi/stream.py
 COPY pi/sensor.py pi/sensor.py
 COPY pi/system.py pi/system.py
+COPY pi/hardware.py pi/hardware.py
 ENV PYTHONUNBUFFERED=1
 ENV FASTAPI_MODE=run
 CMD sh -c 'while true; do  curl --silent --retry 5 --retry-connrefused -H "Content-Type: application/json" -d "{\"name\": \"$NAME\", \"url\": \"$URL\"}" "$REGISTER_URL"; sleep 60; done & uv --project pi run fastapi ${FASTAPI_MODE} pi/main.py --port $PORT --host 0.0.0.0'

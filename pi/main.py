@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic_settings import BaseSettings
 
+from hardware import detect_hardware
 from stream import Stream
 from sensor import read_sensor_data
 from system import read_system_info
@@ -24,6 +25,7 @@ settings = Settings()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     app.state.stream = Stream(settings.test_stream)
+    app.state.hardware = detect_hardware(settings.test_stream, settings.test_sensor)
     yield
     app.state.stream.stop()
 
@@ -91,6 +93,11 @@ def get_sensor_data():
         return read_sensor_data(settings.test_sensor)
     except RuntimeError as e:
         raise HTTPException(status_code=501, detail="Sensor not available") from e
+
+
+@app.get("/hardware")
+def get_hardware(request: Request):
+    return request.app.state.hardware
 
 
 @app.get("/system")

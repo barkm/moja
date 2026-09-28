@@ -265,6 +265,18 @@ def _ffmpeg_hls_arguments(work_dir: Path) -> tuple[Path, list[str]]:
     return playlist_path, args
 
 
+def camera_available() -> bool:
+    if _is_raspberry_pi():
+        return _raspberry_pi_camera_available()
+    # Streaming on a Mac uses the default capture device, which is assumed to
+    # be there.
+    return _is_mac()
+
+
+def get_microphone() -> "MicrophoneInfo | None":
+    return _get_raspberry_pi_microphone() if _is_raspberry_pi() else None
+
+
 def _raspberry_pi_camera_available() -> bool:
     return "No cameras available!" not in subprocess.check_output(
         ["rpicam-vid", "--list-cameras"]

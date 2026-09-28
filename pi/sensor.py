@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 import logging
+from pathlib import Path
 import random
 
 logger = logging.getLogger(__name__)
@@ -58,6 +59,26 @@ class SensorStatus:
     checksum_error: bool
 
 
+# The HDC302x address is set by its ADDR pins.
+_HDC302X_ADDRESSES = {0x44, 0x45, 0x46, 0x47}
+_CPU_TEMPERATURE_PATH = Path("/sys/class/thermal/thermal_zone0/temp")
+
+
+def hdc302x_connected() -> bool:
+    """Whether a HDC302x answers on the I2C bus, without taking a measurement."""
+    i2c = board.I2C()  # pyright: ignore[reportPossiblyUnboundVariable]
+    while not i2c.try_lock():
+        pass
+    try:
+        return not _HDC302X_ADDRESSES.isdisjoint(i2c.scan())
+    finally:
+        i2c.unlock()
+
+
+def cpu_temperature_available() -> bool:
+    return _CPU_TEMPERATURE_PATH.exists()
+
+
 def read_sensor_data(mock_data: bool) -> SensorData:
     read_sensor = _mock_sensor_data if mock_data else _read_pi_sensor
     sensor_readings = [read_sensor() for _ in range(5)]
@@ -106,9 +127,7 @@ def _read_pi_sensor() -> SensorData:
 
 def _read_cpu_temperature() -> float | None:
     try:
-        with open("/sys/class/thermal/thermal_zone0/temp", "r") as f:
-            temp_str = f.read().strip()
-            return float(temp_str) / 1000.0
+        return float(_CPU_TEMPERATURE_PATH.read_text().strip()) / 1000.0
     except Exception:
         logger.error("Failed to read CPU temperature", exc_info=True)
         return None
