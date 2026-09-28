@@ -3,7 +3,6 @@
 	import {
 		checkDeviceAvailability,
 		getHardware,
-		getStatus,
 		getSystemInfo,
 		Role,
 		type Hardware,
@@ -20,7 +19,6 @@
 	}
 
 	let { user, name, allowed_roles = $bindable(), active, location }: Props = $props();
-	const status_promise = getStatus(user, name);
 	const local_promise = checkDeviceAvailability(name);
 	const system_promise = active ? getSystemInfo(user, name) : null;
 	const hardware_promise = active ? getHardware(user, name) : null;
@@ -94,11 +92,6 @@
 	</div>
 	<div class="mt-2 text-gray-600">Plats: {location ?? 'Ingen'}</div>
 	{#if active}
-		{#await status_promise}
-			<div class="rounded-log mt-3 mb-3 h-4 w-24 animate-pulse rounded bg-gray-300"></div>
-		{:then status}
-			<div class="mt-2 text-gray-600">Status: {status.status ?? 'Okänd'}</div>
-		{/await}
 		{#await hardware_promise then hardware}
 			{#if hardware}
 				<dl class="mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">

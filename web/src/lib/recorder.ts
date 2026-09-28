@@ -210,11 +210,6 @@ export const setDeviceRoles = async (
 	await response.json();
 };
 
-export const getStatus = async (user: User, device_name: string): Promise<{ status: string }> => {
-	const { response } = await localRequestWithRelayFallback(user, device_name, `/status`);
-	return response.json();
-};
-
 export type SystemInfo = {
 	hostname: string | null;
 	model: string | null;
