@@ -2,9 +2,11 @@
 	import { resolve } from '$app/paths';
 	import {
 		checkDeviceAvailability,
+		getHardware,
 		getStatus,
 		getSystemInfo,
 		Role,
+		type Hardware,
 		type SystemInfo
 	} from '$lib/recorder';
 	import type { User } from 'firebase/auth';
@@ -13,13 +15,27 @@
 		name: string;
 		allowed_roles: Role[];
 		active: boolean;
+		location: string | null;
 		user: User;
 	}
 
-	let { user, name, allowed_roles = $bindable(), active }: Props = $props();
+	let { user, name, allowed_roles = $bindable(), active, location }: Props = $props();
 	const status_promise = getStatus(user, name);
 	const local_promise = checkDeviceAvailability(name);
 	const system_promise = active ? getSystemInfo(user, name) : null;
+	const hardware_promise = active ? getHardware(user, name) : null;
+
+	const hardwareRows = (hardware: Hardware): [string, string][] => {
+		const sensors = [
+			...(hardware.temperature_humidity ? ['Temperatur', 'Luftfuktighet'] : []),
+			...(hardware.cpu_temperature ? ['CPU-temperatur'] : [])
+		];
+		return [
+			['Sensorer', sensors.length > 0 ? sensors.join(', ') : 'Inga'],
+			['Kamera', hardware.camera ? 'Ja' : 'Nej'],
+			['Mikrofon', hardware.microphone ?? 'Nej']
+		];
+	};
 
 	const formatBytes = (bytes: number): string => {
 		const gigabytes = bytes / 1024 ** 3;
@@ -76,11 +92,24 @@
 			{/if}
 		{/await}
 	</div>
+	<div class="mt-2 text-gray-600">Plats: {location ?? 'Ingen'}</div>
 	{#if active}
 		{#await status_promise}
 			<div class="rounded-log mt-3 mb-3 h-4 w-24 animate-pulse rounded bg-gray-300"></div>
 		{:then status}
 			<div class="mt-2 text-gray-600">Status: {status.status ?? 'Okänd'}</div>
+		{/await}
+		{#await hardware_promise then hardware}
+			{#if hardware}
+				<dl class="mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+					{#each hardwareRows(hardware) as [label, value] (label)}
+						<dt class="text-gray-500">{label}</dt>
+						<dd class="break-words text-gray-800">{value}</dd>
+					{/each}
+				</dl>
+			{/if}
+		{:catch}
+			<!-- Devices running an older version don't have the endpoint yet -->
 		{/await}
 		{#await system_promise then info}
 			{#if info}

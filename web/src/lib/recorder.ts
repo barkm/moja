@@ -172,17 +172,19 @@ export const getRecordingsByLocation = async (
 	}));
 };
 
-export const listDevices = async (
-	user: User
-): Promise<{ name: string; allowed_roles: Role[]; active: boolean }[]> => {
+export interface DeviceInfo {
+	name: string;
+	allowed_roles: Role[];
+	active: boolean;
+	location: string | null;
+}
+
+export const listDevices = async (user: User): Promise<DeviceInfo[]> => {
 	const response = await authorizedRequest(user, PUBLIC_RECORDER_URL, 'list_devices');
 	return response.json();
 };
 
-export const getDevice = async (
-	user: User,
-	device_name: string
-): Promise<{ name: string; allowed_roles: Role[]; active: boolean } | null> => {
+export const getDevice = async (user: User, device_name: string): Promise<DeviceInfo | null> => {
 	const response = await authorizedRequest(user, PUBLIC_RECORDER_URL, `device/${device_name}`);
 	if (!response.ok) {
 		return null;
@@ -233,6 +235,21 @@ export const getSystemInfo = async (user: User, device_name: string): Promise<Sy
 	const { response } = await localRequestWithRelayFallback(user, device_name, `/system`);
 	if (!response.ok) {
 		throw new Error(`Failed to get system info: ${response.status}`);
+	}
+	return response.json();
+};
+
+export type Hardware = {
+	camera: boolean;
+	microphone: string | null;
+	temperature_humidity: boolean;
+	cpu_temperature: boolean;
+};
+
+export const getHardware = async (user: User, device_name: string): Promise<Hardware> => {
+	const { response } = await localRequestWithRelayFallback(user, device_name, `/hardware`);
+	if (!response.ok) {
+		throw new Error(`Failed to get hardware: ${response.status}`);
 	}
 	return response.json();
 };

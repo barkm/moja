@@ -27,6 +27,7 @@
 				name={device.name}
 				allowed_roles={device.allowed_roles}
 				active={device.active}
+				location={device.location}
 			/>
 		{/each}
 	{/await}
